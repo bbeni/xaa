@@ -3,8 +3,10 @@ import pandas as pd
 import numpy as np
 
 from core import SingleMeasurementProcessor
-from plotting import CheckPointPlotter
-from operations import Normalize, CheckPoint, LineBG, Back, Integrate
+from plotting import CheckpointPlotter
+from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, Difference
+
+from loaders.util import get_measurements_boreas_file
 
 
 
@@ -16,27 +18,32 @@ from operations import Normalize, CheckPoint, LineBG, Back, Integrate
 #                           -> split_by(filter) -> average -> normalize(to='m1') -> difference -> integrate -> integral_gather
 #  single dfs -> slect_x,y -> average -> bg_subtract(method) -> normalize -> vary('x', [1,2]) -> bg_subtract('fermi') -> integrate -> vary -> integral_gather
 
-
-# file structure proposal
-# main.py -> tests and examples
-# single.py
-# helpers.py
-# multi.py
-# preprocess.py
-# plots.py
-
 def test():
 
-    pipeline = [Normalize, CheckPoint, LineBG, CheckPoint]
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42,  46+1))
+
+
+    pipeline = [LineBG, FermiBG(a=0, delta=1.5), Average, Normalize(save='m1'), BackTo(2), Normalize(to='m1'), SplitBy, Average, Difference, CheckPoint, Integrate, CheckPoint]
     p = SingleMeasurementProcessor()
     p.add_pipeline(pipeline)
 
 
-    p.add_params()
-    p.add_data()
+    filter_horizontal = lambda df: df.polarization[0] < np.pi/4
+
+    global_params = {'line_range': [627, 635],
+                     'binary_filter':filter_horizontal,
+                     'peak_1': (642, 647),
+                     'peak_2': (652, 656),
+                     'post': (660, 661),}
+
+    p.add_params(global_params)
+    p.missing_params()
+
+
+    p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
     p.run()
 
-    plotter = CheckPointPlotter()
+    plotter = CheckpointPlotter()
     plotter.plot(p)
 
     #pipeline1 = [SelectXY, Interpolate, Average, Normalize(save='m1'), Back(steps=2), SplitBy(f=left), Average, Normalize(to='m1'), Difference, Integrate]

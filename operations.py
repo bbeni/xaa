@@ -65,10 +65,12 @@ class Collapse(Operation):
 
 class Back(PipelineOperation):
     def __init__(self, steps=1):
+        super().__init__()
         self.steps = steps
 
 class BackTo(PipelineOperation):
     def __init__(self, to=0):
+        super().__init__()
         self.to = to
 
 class CheckPoint(PipelineOperation):
@@ -76,7 +78,7 @@ class CheckPoint(PipelineOperation):
 
 class Average(Collapse):
     def do(self, x, y):
-        return x, np.average(y, axis=0)
+        return np.average(y, axis=0)
 
 class Flip(Transform):
     def do(self, x, y):
@@ -84,6 +86,7 @@ class Flip(Transform):
 
 class Normalize(Transform):
     def __init__(self, save=None, to=None):
+        super().__init__()
         if save and to:
             raise ValueError('save and to can not be used at the same time')
         self.save = save
@@ -95,6 +98,8 @@ class Normalize(Transform):
             self.set_global(self.save, m)
         elif self.to:
             m = self.get_global(self.to)
+        else:
+            m = np.max(y)
         y /= m
         return y
 
@@ -104,7 +109,7 @@ def fermi_step(x, y, peak_1, peak_2, post, delta, a):
         b = 1-a
         return h*(1- a*(1/(1+np.exp((x-E_l3-step_e)/delta))) - b*(1/(1+np.exp((x-E_l2-step_e)/delta))))
 
-    post_range = closest_idx(x, post[0]), closest_idx(x, post[0])
+    post_range = closest_idx(x, post[0]), closest_idx(x, post[1])
     idx_l3 = peak_x(x, y, peak_2)
     idx_l2 = peak_x(x, y, peak_1)
 
@@ -119,11 +124,13 @@ class FermiBG(Transform):
                           self.get_param('post'),
                           self.get_param('delta'), self.get_param('a'))
 
+        self.set_global('fermi_bg', fermi_bg)
+
         return y - fermi_bg
 
 
 class LineBG(Transform):
-    expected = ['line_range']
+    expected_params = ['line_range']
     def do(self, x, y):
         def line(x, slope, intercept):
             return slope*x + intercept
