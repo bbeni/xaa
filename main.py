@@ -2,27 +2,10 @@
 import pandas as pd
 import numpy as np
 
+from core import SingleMeasurementProcessor
+from plotting import CheckPointPlotter
+from operations import Normalize, CheckPoint, LineBG, Back, Integrate
 
-
-# TODO implement select_x_y, average, normalize_save(variable='m1'), normalize_to('m1'),
-#  bg_subtract, split_by, difference, vary,
-
-class Single:
-    def __init__(self, dfs):
-        self.dfs = dfs
-
-
-# should be easy to implement once Single works
-class Multi:
-    def __init__(self, dfs_list):
-        self.singles = []
-        for dfs in dfs_list:
-            self.singles.append(Single(dfs))
-
-
-# should be able to extract needed data from pipline
-class ExamplePlot:
-    pass
 
 
 # another requirement is that we have estimated parameters in case nothing is provided
@@ -42,7 +25,21 @@ class ExamplePlot:
 # preprocess.py
 # plots.py
 
+def test():
 
+    pipeline = [Normalize, CheckPoint, LineBG, CheckPoint]
+    p = SingleMeasurementProcessor()
+    p.add_pipeline(pipeline)
+
+
+    p.add_params()
+    p.add_data()
+    p.run()
+
+    plotter = CheckPointPlotter()
+    plotter.plot(p)
+
+    #pipeline1 = [SelectXY, Interpolate, Average, Normalize(save='m1'), Back(steps=2), SplitBy(f=left), Average, Normalize(to='m1'), Difference, Integrate]
 
 if __name__ == "__main__":
-    pass
+    test()
