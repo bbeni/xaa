@@ -5,11 +5,9 @@ import numpy as np
 from core import SingleMeasurementProcessor, MultiMeasurementProcessor
 from plotting import CheckpointPlotter, CheckpointPlotterMulti
 from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, Difference
-
 from loaders.util import get_measurements_boreas_file
 
 def test():
-
     dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42+1,  46+1))
 
 
@@ -33,7 +31,7 @@ def test():
     p.check_missing_params()
 
 
-    p.add_data(dataframes, x_column='energy', y_column='tfy_normalized')
+    p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
     p.run()
 
     plotter = CheckpointPlotter()
@@ -97,7 +95,7 @@ def strain_ni_xld_test():
     p.add_params(ni_params)
     p.check_missing_params()
 
-    p.add_data(dataframes[0], x_column='energy', y_column='mu_normalized')
+    p.add_data(dataframes[0], x_column='energy', y_column='tfy_normalized')
     p.run()
 
     plotter = CheckpointPlotter()
@@ -130,7 +128,7 @@ def thickness_ni_xld_fy_test():
     p.add_params(ni_params)
     p.check_missing_params()
 
-    p.add_data(dataframes[0], x_column='energy', y_column='tfy_normalized')
+    p.add_data(dataframes[0], x_column='energy', y_column='mu_normalized')
     p.run()
 
     plotter = CheckpointPlotter()
@@ -141,7 +139,7 @@ def xas_low_temp():
 
 
 if __name__ == "__main__":
-    #test()
+    test()
     #test2()
-    strain_ni_xld_test()
-    thickness_ni_xld_fy_test()
+    #strain_ni_xld_test()
+    #thickness_ni_xld_fy_test()
