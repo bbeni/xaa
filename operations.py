@@ -46,19 +46,19 @@ class Operation:
 class PipelineOperation(Operation):
     pass
 
-class Transform(Operation):
+class TransformOperation(Operation):
     def do(self, x, y):
         return y
 
-class Split(Operation):
+class SplitOperation(Operation):
     def do(self, x, y, df: pd.DataFrame) -> bool:
         raise NotImplementedError()
 
-class Combine(Operation):
+class CombineOperation(Operation):
     def do(self, x, ya, yb):
         raise NotImplementedError()
 
-class Collapse(Operation):
+class CollapseOperation(Operation):
     def do(self, x, y):
         raise NotImplementedError()
 
@@ -76,15 +76,15 @@ class BackTo(PipelineOperation):
 class CheckPoint(PipelineOperation):
     pass
 
-class Average(Collapse):
+class Average(CollapseOperation):
     def do(self, x, y):
         return np.average(y, axis=0)
 
-class Flip(Transform):
+class Flip(TransformOperation):
     def do(self, x, y):
         return x, -y
 
-class Normalize(Transform):
+class Normalize(TransformOperation):
     def __init__(self, save=None, to=None):
         super().__init__()
         if save and to:
@@ -117,19 +117,22 @@ def fermi_step(x, y, peak_1, peak_2, post, delta, a):
     f = lambda x: mu_step(x, idx_l3, idx_l2, 0, delta, h, a)
     return f(x)
 
-class FermiBG(Transform):
+class FermiBG(TransformOperation):
     expected_params = ['peak_1', 'peak_2', 'post', 'delta', 'a']
     def do(self, x, y):
         fermi_bg = fermi_step(x, y, self.get_param('peak_1'), self.get_param('peak_2'),
                           self.get_param('post'),
                           self.get_param('delta'), self.get_param('a'))
 
-        self.set_global('fermi_bg', fermi_bg)
+        try:
+            self.set_global('fermi_bg', fermi_bg)
+        except:
+            pass
 
         return y - fermi_bg
 
 
-class LineBG(Transform):
+class LineBG(TransformOperation):
     expected_params = ['line_range']
     def do(self, x, y):
         def line(x, slope, intercept):
@@ -143,17 +146,19 @@ class LineBG(Transform):
         result = fitted.eval(x=x)
         return y - result
 
-class Integrate(Transform):
+class Integrate(TransformOperation):
     def do(self, x, y):
         integral = integrate.cumulative_trapezoid(y, x, initial=0)
         return integral
 
-class Difference(Combine):
+class Difference(CombineOperation):
     def do(self, x, ya, yb):
         return yb-ya
 
-class SplitBy(Split):
+class SplitBy(SplitOperation):
     expected_params = ['binary_filter']
+    def __init__(self, binary_filter):
+        super().__init__(binary_filter=binary_filter)
     def do(self, x, y, df):
         filter = self.get_param('binary_filter')
         return filter(df)

@@ -28,6 +28,8 @@ class StoragePool:
         self.storage = {}
 
     def save(self, key, value):
+        if key in self.storage:
+            raise KeyError(f'{key} already in global storage!')
         self.storage[key] = value
 
     def get(self, key):

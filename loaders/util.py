@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from .preprocess import create_dfs
-from typing import List, Union
+from typing import List, Union, Iterable
 
 def _load_once(function):
     data_managers = {}
@@ -23,10 +23,11 @@ def load_dm(filename):
 def get_measurements_boreas_file(filename, indices: Union[List[int], List[List[int]]]) \
         -> Union[List[pd.DataFrame], List[List[pd.DataFrame]]]:
     """indides either a list of indices or a list[list of indices]"""
-    if type(indices[0]) is list:
+    if type(indices[0]) is range or type(indices[0]) is list:
         dfs = []
         for indices_sublist in indices:
            dfs.append(load_dm(filename).select(indices_sublist))
+        return dfs
     else:
         return load_dm(filename).select(indices)
 

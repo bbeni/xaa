@@ -2,9 +2,9 @@ from copy import deepcopy
 import sys
 import pandas as pd
 import numpy as np
-from typing import Union, List
+from typing import Union, List, Iterator
 
-from operations import Operation, PipelineOperation, Transform, Split, Combine, Collapse
+from operations import Operation, PipelineOperation, TransformOperation, SplitOperation, CombineOperation, CollapseOperation
 from operations import Back, BackTo, CheckPoint
 
 from helpers import common_bounds, interpolate, StoragePool
@@ -19,7 +19,7 @@ class XYBlock:
     def level(self):
         return len(self.y.shape)
 
-    def apply_transform(self, transform: Transform):
+    def apply_transform(self, transform: TransformOperation):
         if self.level() == 1:
             self.y = transform.do(self.x, self.y)
         elif self.level() == 2:
@@ -28,9 +28,8 @@ class XYBlock:
         else:
             raise NotImplementedError('level ' + self.level())
 
-    def apply_collapse(self, collapse: Collapse):
+    def apply_collapse(self, collapse: CollapseOperation):
         self.y = collapse.do(self.x, self.y)
-
 
 class XYBlockSplit:
     def __init__(self, x, ya, yb, name=''):
@@ -42,7 +41,7 @@ class XYBlockSplit:
     def level(self):
         return len(self.ya.shape)
 
-    def apply_transform(self, transform: Transform):
+    def apply_transform(self, transform: TransformOperation):
         if self.level() == 1:
             self.ya = transform.do(self.x, self.ya)
             self.yb = transform.do(self.x, self.yb)
@@ -54,7 +53,7 @@ class XYBlockSplit:
         else:
             raise NotImplementedError('level ' + self.level())
 
-    def apply_collapse(self, collapse: Collapse):
+    def apply_collapse(self, collapse: CollapseOperation):
         self.ya = collapse.do(self.x, self.ya)
         self.yb = collapse.do(self.x, self.yb)
 
@@ -94,7 +93,7 @@ class SingleMeasurementProcessor:
         first_block = XYBlock(first_x, first_y, name='Base Block')
         self.xy_blocks.append(first_block)
 
-    def missing_params(self):
+    def check_missing_params(self):
         failed = False
         if self.pipeline == []:
             raise ValueError('no pipeline added. supply a pipeline with the add_pipeline method first!')
@@ -134,7 +133,6 @@ class SingleMeasurementProcessor:
 
             self.pipeline.append(operation)
 
-
     def _instantiate_operations_and_apply_params(self):
         for i in range(len(self.pipeline)):
             operation = self.pipeline[i]
@@ -156,14 +154,14 @@ class SingleMeasurementProcessor:
                         self.pipeline[i].params[m] = self.params[m]
                     # TODO override functionality
                 else:
-                    print(f'not enough params missing:{operation.missing_params({**self.params, **operation.params})}')
+                    print(
+                        f'not enough params missing:{operation.check_missing_params({**self.params, **operation.params})}')
             else:
                 raise Exception(f'not of type Operation {operation}')
 
     def _add_storage_pool(self):
         for operation in self.pipeline:
             operation._set_storage_pool(self.storage_pool)
-
 
     def run(self):
         if self.dfs == None:
@@ -198,10 +196,10 @@ class SingleMeasurementProcessor:
                 else:
                     raise NotImplementedError()
 
-            elif isinstance(operation, Transform):
+            elif isinstance(operation, TransformOperation):
                 block.apply_transform(operation)
 
-            elif isinstance(operation, Split):
+            elif isinstance(operation, SplitOperation):
                 if isinstance(block, XYBlockSplit):
                     raise RuntimeError('cannot split after arleady split.')
                 a = []
@@ -215,14 +213,14 @@ class SingleMeasurementProcessor:
                         b.append(block.y[i,:])
                 block = XYBlockSplit(block.x, np.stack(a), np.stack(b))
 
-            elif isinstance(operation, Combine):
+            elif isinstance(operation, CombineOperation):
                 if isinstance(block, XYBlock):
                     raise RuntimeError(f'need to be split before Combine operation {operation}')
 
                 y = operation.do(block.x, block.ya, block.yb)
                 block = XYBlock(block.x, y)
 
-            elif isinstance(operation, Collapse):
+            elif isinstance(operation, CollapseOperation):
                 block.apply_collapse(operation)
 
             else:
@@ -230,12 +228,50 @@ class SingleMeasurementProcessor:
 
             self.xy_blocks.append(block)
 
-    def get_checkpoints(self):
+    def get_checkpoints(self) -> List:
         return self.y_chekpoints
+
+    def get_checkpoint(self, index):
+        return self.y_chekpoints[index]
 
     def summary(self):
         raise NotImplementedError()
 
+
+class MultiMeasurementProcessor:
+    def __init__(self, N):
+        self.singles = [SingleMeasurementProcessor() for i in range(N)]
+
+    def add_data(self, dfs: Union[List[pd.DataFrame], List[List[pd.DataFrame]]], x_column: str, y_column: str, n_samples: int = 2000):
+        for i, df in enumerate(dfs):
+            self.singles[i].add_data(df, x_column, y_column, n_samples)
+
+    def check_missing_params(self):
+        for s in self.singles:
+            s.check_missing_params()
+
+    def add_params(self, params: dict, override: bool=False):
+        for s in self.singles:
+            s.add_params(params, override)
+
+    def add_pipeline(self, pipeline: List[Operation]):
+        for s in self.singles:
+            s.add_pipeline(pipeline)
+
+    def run(self):
+        for s in self.singles:
+            s.run()
+
+    def get_checkpoints(self) -> List[List]:
+
+        cps = [[]]*len(self.singles[0].get_checkpoints())
+        for s in self.singles:
+            for i, cp in enumerate(s.get_checkpoints()):
+                cps[i].append(cp)
+        return cps
+
+    def summary(self):
+        raise NotImplementedError()
 
 if __name__ == '__main__':
     p = SingleMeasurementProcessor()

@@ -2,31 +2,23 @@
 import pandas as pd
 import numpy as np
 
-from core import SingleMeasurementProcessor
-from plotting import CheckpointPlotter
+from core import SingleMeasurementProcessor, MultiMeasurementProcessor
+from plotting import CheckpointPlotter, CheckpointPlotterMulti
 from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, Difference
 
 from loaders.util import get_measurements_boreas_file
 
-
-
-# another requirement is that we have estimated parameters in case nothing is provided
-
-# we can structure it like a tree
-# pipline examples:
-#  single dfs -> select_x,y -> average -> normalize(save='m1')
-#                           -> split_by(filter) -> average -> normalize(to='m1') -> difference -> integrate -> integral_gather
-#  single dfs -> slect_x,y -> average -> bg_subtract(method) -> normalize -> vary('x', [1,2]) -> bg_subtract('fermi') -> integrate -> vary -> integral_gather
-
 def test():
 
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42,  46+1))
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42+1,  46+1))
 
 
-    pipeline = [LineBG, FermiBG(a=0, delta=1.5), Average, Normalize(save='m1'), BackTo(2), Normalize(to='m1'), SplitBy, Average, Difference, CheckPoint, Integrate, CheckPoint]
+    pipeline = [LineBG, CheckPoint, Average, FermiBG, CheckPoint, Normalize(save='m1'),
+                BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
+                Difference, CheckPoint, Integrate, CheckPoint]
+
     p = SingleMeasurementProcessor()
     p.add_pipeline(pipeline)
-
 
     filter_horizontal = lambda df: df.polarization[0] < np.pi/4
 
@@ -34,19 +26,122 @@ def test():
                      'binary_filter':filter_horizontal,
                      'peak_1': (642, 647),
                      'peak_2': (652, 656),
-                     'post': (660, 661),}
+                     'post': (660, 661),
+                     'a': 0, 'delta': 1.5}
 
     p.add_params(global_params)
-    p.missing_params()
+    p.check_missing_params()
 
 
-    p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
+    p.add_data(dataframes, x_column='energy', y_column='tfy_normalized')
     p.run()
 
     plotter = CheckpointPlotter()
     plotter.plot(p)
 
-    #pipeline1 = [SelectXY, Interpolate, Average, Normalize(save='m1'), Back(steps=2), SplitBy(f=left), Average, Normalize(to='m1'), Difference, Integrate]
+def test2():
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', [range(42+1,  46+1), range(47+1, 51+1)])
+
+    pipeline = [LineBG, CheckPoint, Average, FermiBG, CheckPoint, Normalize(save='m1'),
+                BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
+                Difference, CheckPoint, Integrate, CheckPoint]
+
+    p = MultiMeasurementProcessor(2)
+    p.add_pipeline(pipeline)
+
+    filter_horizontal = lambda df: df.polarization[0] < np.pi/4
+
+    global_params = {'line_range': [627, 635],
+                     'binary_filter':filter_horizontal,
+                     'peak_1': (642, 647),
+                     'peak_2': (652, 656),
+                     'post': (660, 661),
+                     'a': 0, 'delta': 1.5}
+
+    p.add_params(global_params)
+    p.missing_params()
+
+    p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
+    p.run()
+
+    print()
+    plotter = CheckpointPlotterMulti()
+    plotter.plot(p)
+
+
+
+
+def strain_ni_xld_test():
+    '''300 Kelvin 0 Tesla'''
+    labels = ['LAO', 'NGO', 'LSAT', 'LGO', 'STO']
+    measurement_indices = [(87,   91), (92,   96), (97,  101), (107, 111), (102, 106)]
+    indices_ranges = [range(a+1, b+1) for a, b in measurement_indices]
+
+    ni_params = {'line_range': (840, 848),
+                     'peak_1': (853, 855),
+                     'peak_2': (866, 875),
+                     'pre': (840, 848),
+                     'post': (878, 883),
+                     'a': 1/3, 'delta': 1.5}
+
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', indices_ranges)
+
+    filter_horizontal = lambda df: df.polarization[0] < np.pi/4
+    pipeline = [Average, LineBG, FermiBG, Normalize(save='m1'),
+                BackTo(0), SplitBy(filter_horizontal), Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
+                Difference, CheckPoint, Integrate, CheckPoint]
+
+    #p = MultiMeasurementProcessor(5)
+    p = SingleMeasurementProcessor()
+    p.add_pipeline(pipeline)
+    p.add_params(ni_params)
+    p.check_missing_params()
+
+    p.add_data(dataframes[0], x_column='energy', y_column='mu_normalized')
+    p.run()
+
+    plotter = CheckpointPlotter()
+    plotter.plot(p)
+
+def thickness_ni_xld_fy_test():
+
+    thickness = [3, 6, 10, 21, 30]  # unit cells
+    measurement_indices = [(102, 106), (122, 126), (117, 121), (127, 131), (112, 116),]
+    indices_ranges = [range(a+1, b+1) for a, b in measurement_indices]
+
+
+    ni_params = {'line_range': (840, 848),
+                     'peak_1': (853, 855),
+                     'peak_2': (866, 875),
+                     'pre': (840, 848),
+                     'post': (878, 883),
+                     'a': 1/3, 'delta': 1.5}
+
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', indices_ranges)
+
+    filter_horizontal = lambda df: df.polarization[0] < np.pi/4
+    pipeline = [Average, LineBG, FermiBG, Normalize(save='m1'),
+                BackTo(0), SplitBy(filter_horizontal), Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
+                Difference, CheckPoint, Integrate, CheckPoint]
+
+    #p = MultiMeasurementProcessor(5)
+    p = SingleMeasurementProcessor()
+    p.add_pipeline(pipeline)
+    p.add_params(ni_params)
+    p.check_missing_params()
+
+    p.add_data(dataframes[0], x_column='energy', y_column='tfy_normalized')
+    p.run()
+
+    plotter = CheckpointPlotter()
+    plotter.plot(p)
+
+def xas_low_temp():
+    pass
+
 
 if __name__ == "__main__":
-    test()
+    #test()
+    #test2()
+    strain_ni_xld_test()
+    thickness_ni_xld_fy_test()
