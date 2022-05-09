@@ -8,12 +8,12 @@ from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate
 from loaders.util import get_measurements_boreas_file
 
 def test():
+    # LAO Ni XLD
     dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42+1,  46+1))
 
-
-    pipeline = [LineBG, CheckPoint, Average, FermiBG, CheckPoint, Normalize(save='m1'),
-                BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
-                Difference, CheckPoint, Integrate, CheckPoint]
+    pipeline = [LineBG, Average, FermiBG, Normalize(save='m1'),
+                BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, CheckPoint, FermiBG, CheckPoint,
+                Difference, CheckPoint, Integrate]
 
     p = SingleMeasurementProcessor()
     p.add_pipeline(pipeline)
@@ -30,8 +30,7 @@ def test():
     p.add_params(global_params)
     p.check_missing_params()
 
-
-    p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
+    p.add_data(dataframes, x_column='energy', y_column='tfy_normalized')
     p.run()
 
     plotter = CheckpointPlotter()
@@ -57,7 +56,7 @@ def test2():
                      'a': 0, 'delta': 1.5}
 
     p.add_params(global_params)
-    p.missing_params()
+    p.check_missing_params()
 
     p.add_data(dataframes, x_column='energy', y_column='mu_normalized')
     p.run()
@@ -65,9 +64,6 @@ def test2():
     print()
     plotter = CheckpointPlotterMulti()
     plotter.plot(p)
-
-
-
 
 def strain_ni_xld_test():
     '''300 Kelvin 0 Tesla'''
@@ -140,6 +136,6 @@ def xas_low_temp():
 
 if __name__ == "__main__":
     test()
-    #test2()
-    #strain_ni_xld_test()
-    #thickness_ni_xld_fy_test()
+    test2()
+    strain_ni_xld_test()
+    thickness_ni_xld_fy_test()

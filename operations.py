@@ -124,11 +124,6 @@ class FermiBG(TransformOperation):
                           self.get_param('post'),
                           self.get_param('delta'), self.get_param('a'))
 
-        try:
-            self.set_global('fermi_bg', fermi_bg)
-        except:
-            pass
-
         return y - fermi_bg
 
 
