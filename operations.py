@@ -50,6 +50,10 @@ class TransformOperation(Operation):
     def do(self, x, y):
         return y
 
+class TransformOperationXY(Operation):
+    def do(self, x, y):
+        return x, y
+
 class SplitOperation(Operation):
     def do(self, x, y, df: pd.DataFrame) -> bool:
         raise NotImplementedError()
@@ -126,6 +130,16 @@ class FermiBG(TransformOperation):
 
         return y - fermi_bg
 
+class Cut(TransformOperationXY):
+    expected_params = ['cut_range']
+    def do(self, x, y):
+        x_min, x_max = self.get_param('cut_range')
+        ia, ib = closest_idx(x, x_min), closest_idx(x, x_max)
+        if (ib <= ia):
+            ib = ia+2
+
+        return x[ia:ib], y[ia:ib]
+
 
 class LineBG(TransformOperation):
     expected_params = ['line_range']
@@ -149,6 +163,10 @@ class Integrate(TransformOperation):
 class Difference(CombineOperation):
     def do(self, x, ya, yb):
         return yb-ya
+
+class CombineAverage(CombineOperation):
+    def do(self, x, ya, yb):
+        return (ya+yb)/2
 
 class SplitBy(SplitOperation):
     expected_params = ['binary_filter']

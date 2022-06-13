@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from typing import Union, List, Iterator
 
-from operations import Operation, PipelineOperation, TransformOperation, SplitOperation, CombineOperation, CollapseOperation
+from operations import Operation, PipelineOperation, TransformOperation, TransformOperationXY, SplitOperation, CombineOperation, CollapseOperation, Cut
 from operations import Back, BackTo, CheckPoint
 
 from helpers import common_bounds, interpolate, StoragePool
@@ -25,6 +25,21 @@ class XYBlock:
         elif self.level() == 2:
             for i in range(self.y.shape[0]):
                 self.y[i,:] = transform.do(self.x, self.y[i,:])
+        else:
+            raise NotImplementedError('apply transform level ' + self.level())
+
+    def apply_transform_xy(self, transform: TransformOperationXY):
+        if self.level() == 1:
+            self.x, self.y = transform.do(self.x, self.y)
+        elif self.level() == 2:
+            x, new_y = transform.do(self.x, self.y[0, :])
+            ny = np.zeros((self.y.shape[0], new_y.shape[0]))
+            ny[0,:] = new_y
+            for i in range(1, self.y.shape[0]):
+                _, ny[i,:] = transform.do(self.x, self.y[i,:])
+            self.y = ny
+            self.x = x
+            print(self.x.shape, self.y.shape)
         else:
             raise NotImplementedError('level ' + self.level())
 
@@ -68,7 +83,7 @@ class SingleMeasurementProcessor:
         self.params = {}
         self.pipeline = []
 
-        self.y_chekpoints = []
+        self.y_checkpoints = []
         self.storage_pool = StoragePool()
 
     def get_x(self):
@@ -190,14 +205,17 @@ class SingleMeasurementProcessor:
                 elif isinstance(operation, CheckPoint):
 
                     if isinstance(block, XYBlock):
-                        self.y_chekpoints.append(block.y)
+                        self.y_checkpoints.append([block.x, block.y])
                     else:
-                        self.y_chekpoints.append([block.ya, block.yb])
+                        self.y_checkpoints.append([block.x, block.ya, block.yb])
                 else:
                     raise NotImplementedError()
 
             elif isinstance(operation, TransformOperation):
                 block.apply_transform(operation)
+
+            elif isinstance(operation, TransformOperationXY):
+                block.apply_transform_xy(operation)
 
             elif isinstance(operation, SplitOperation):
                 if isinstance(block, XYBlockSplit):
@@ -224,15 +242,15 @@ class SingleMeasurementProcessor:
                 block.apply_collapse(operation)
 
             else:
-                print('not ok')
+                print('in run() operation not implemented - not ok: ' + str(operation))
 
             self.xy_blocks.append(block)
 
     def get_checkpoints(self) -> List:
-        return self.y_chekpoints
+        return self.y_checkpoints
 
     def get_checkpoint(self, index):
-        return self.y_chekpoints[index]
+        return self.y_checkpoints[index]
 
     def summary(self):
         raise NotImplementedError()

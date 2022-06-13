@@ -4,7 +4,7 @@ import numpy as np
 
 from core import SingleMeasurementProcessor, MultiMeasurementProcessor
 from plotting import CheckpointPlotter, CheckpointPlotterMulti
-from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, Difference
+from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, Difference, Cut, CombineAverage
 from loaders.util import get_measurements_boreas_file
 
 def test():
@@ -133,9 +133,39 @@ def thickness_ni_xld_fy_test():
 def xas_low_temp():
     pass
 
+def tfy_vs_tey():
+
+    #data_range = range(57+1,  60+1)
+    #data_range = range(407+1, 415+1) # nd // sto xmcd low temp
+    data_range = range(263+1, 271+1) # mn // sto xmcd low temp
+    cut_range = [634, 660]
+
+    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', data_range)
+
+    filter_circular = lambda df: df.polarization[0] < 0
+
+    pipeline = [Cut, Average, Normalize(save='m1'), BackTo(1), SplitBy, Normalize(to='m1'), Average, CombineAverage, CheckPoint]
+    global_params = {'cut_range':cut_range,
+                     'binary_filter':filter_circular,
+                     }
+
+    for yiel in ['tfy_normalized', 'mu_normalized']:
+        p = SingleMeasurementProcessor()
+        p.add_pipeline(pipeline)
+
+        p.add_params(global_params)
+        p.check_missing_params()
+
+        p.add_data(dataframes, x_column='energy', y_column=yiel)
+        p.run()
+
+        plotter = CheckpointPlotter()
+        plotter.plot(p)
+
 
 if __name__ == "__main__":
-    test()
-    test2()
-    strain_ni_xld_test()
-    thickness_ni_xld_fy_test()
+    #test()
+    #test2()
+    #strain_ni_xld_test()
+    #thickness_ni_xld_fy_test()
+    tfy_vs_tey()
