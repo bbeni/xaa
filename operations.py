@@ -48,10 +48,12 @@ class PipelineOperation(Operation):
 
 class TransformOperation(Operation):
     def do(self, x, y):
+        raise NotImplementedError()
         return y
 
 class TransformOperationXY(Operation):
     def do(self, x, y):
+        raise NotImplementedError()
         return x, y
 
 class SplitOperation(Operation):
@@ -85,8 +87,24 @@ class Average(CollapseOperation):
         return np.average(y, axis=0)
 
 class Flip(TransformOperation):
+    ## TODO: broken after split operation
     def do(self, x, y):
         return x, -y
+
+class ApplyFunctionToY(TransformOperation):
+    expected_params = ['function']
+    def __init__(self, function):
+        super().__init__(function=function)
+    def do(self, x, y):
+        return self.get_param('function')(y)
+
+class Add(TransformOperation):
+    def __init__(self, c):
+        super().__init__()
+        self.c = c
+
+    def do(self, x, y):
+        return y + self.c
 
 class Normalize(TransformOperation):
     def __init__(self, save=None, to=None):
@@ -114,8 +132,17 @@ def fermi_step(x, y, peak_1, peak_2, post, delta, a):
         return h*(1- a*(1/(1+np.exp((x-E_l3-step_e)/delta))) - b*(1/(1+np.exp((x-E_l2-step_e)/delta))))
 
     post_range = closest_idx(x, post[0]), closest_idx(x, post[1])
-    idx_l3 = peak_x(x, y, peak_2)
-    idx_l2 = peak_x(x, y, peak_1)
+
+    try:
+        idx_l3 = peak_x(x, y, peak_2)
+    except ValueError as e:
+        print(e)
+        raise ValueError('In FermiBg: pipeline params wrong \n\n param peak_2 did not find a y value in range of x={}'.format(peak_2))
+    try:
+        idx_l2 = peak_x(x, y, peak_1)
+    except ValueError as e:
+        print(e)
+        raise ValueError('In FermiBg: pipline params wrong \n\n param peak_1 did not find a y value in range of x={}'.format(peak_1))
 
     h = np.mean(y[post_range[0]:post_range[1]])
     f = lambda x: mu_step(x, idx_l3, idx_l2, 0, delta, h, a)
@@ -127,6 +154,8 @@ class FermiBG(TransformOperation):
         fermi_bg = fermi_step(x, y, self.get_param('peak_1'), self.get_param('peak_2'),
                           self.get_param('post'),
                           self.get_param('delta'), self.get_param('a'))
+
+
 
         return y - fermi_bg
 
@@ -160,7 +189,7 @@ class Integrate(TransformOperation):
         integral = integrate.cumulative_trapezoid(y, x, initial=0)
         return integral
 
-class Difference(CombineOperation):
+class CombineDifference(CombineOperation):
     def do(self, x, ya, yb):
         return yb-ya
 

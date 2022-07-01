@@ -128,7 +128,8 @@ class SingleMeasurementProcessor:
                     print(missing)
                     failed = True
         if not failed:
-            print('No Parameter is missing. Nice!')
+            #print('No Parameter is missing. Nice!')
+            pass
         else:
             sys.exit(1)
 
@@ -179,6 +180,7 @@ class SingleMeasurementProcessor:
             operation._set_storage_pool(self.storage_pool)
 
     def run(self):
+
         if self.dfs == None:
             raise ValueError('no data added. supply data with the add_data method first!')
         if self.pipeline == []:
@@ -224,7 +226,10 @@ class SingleMeasurementProcessor:
                 b = []
                 for i in range(len(self.dfs)):
                     df = self.dfs[i]
-                    result = operation.do(block.x, block.y[i,:], df)
+                    try:
+                        result = operation.do(block.x, block.y[i,:], df)
+                    except IndexError as e:
+                        raise IndexError(str(e) + '\n\nSplitOperation failed: maybe only one measurement row?')
                     if result:
                         a.append(block.y[i,:])
                     else:
