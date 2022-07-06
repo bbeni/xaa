@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 from typing import Union, List, Iterator
 
-from operations import Operation, PipelineOperation, TransformOperation, TransformOperationXY, SplitOperation, CombineOperation, CollapseOperation, Cut
-from operations import Back, BackTo, CheckPoint, BackToNamed
+from .operations import Operation, PipelineOperation, TransformOperation, TransformOperationXY, SplitOperation, CombineOperation, CollapseOperation, Cut
+from .operations import Back, BackTo, CheckPoint, BackToNamed
 
-from helpers import common_bounds, interpolate, StoragePool
+from .helpers import common_bounds, interpolate, StoragePool
 
 
 class XYBlock:

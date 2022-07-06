@@ -2,10 +2,10 @@
 import pandas as pd
 import numpy as np
 
-from core import SingleMeasurementProcessor, MultiMeasurementProcessor
-from plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
-from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, CombineDifference, Cut, CombineAverage, Add
-from loaders.util import get_measurements_boreas_file
+from xaa.core import SingleMeasurementProcessor, MultiMeasurementProcessor
+from xaa.plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
+from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, CombineDifference, Cut, CombineAverage, Add
+from xaa.loaders.util import get_measurements_boreas_file
 
 def test():
     # LAO Ni XLD

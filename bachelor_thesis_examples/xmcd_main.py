@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 import os
 
-from core import SingleMeasurementProcessor, MultiMeasurementProcessor
-from plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
-from operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate,\
+from xaa.core import SingleMeasurementProcessor, MultiMeasurementProcessor
+from xaa.plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
+from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate,\
     SplitBy, Average, CombineDifference, Cut, CombineAverage, Add, Flip, ApplyFunctionToY, BackToNamed
-from loaders.util import get_measurements_boreas_file
-from helpers import closest_idx
+from xaa.loaders.util import get_measurements_boreas_file
+from xaa.helpers import closest_idx
 
 labels_name = ['LAO', 'NGO', 'LSAT', 'LGO', 'STO', '3uc', '6uc', '10uc', '21uc']
 labels_id = ['f1', 'f2', 'f3', 'f5', 'f4', 'b2', 'b1', 'b3', 'f6']

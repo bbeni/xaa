@@ -11,7 +11,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from loaders.config import LABELS, PARAMS, CALCULATIONS, RENAMINGS
+from .config import LABELS, PARAMS, CALCULATIONS, RENAMINGS
 
 #################
 # CONFIGURATION #

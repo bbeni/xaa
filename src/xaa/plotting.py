@@ -1,9 +1,8 @@
-from core import SingleMeasurementProcessor, MultiMeasurementProcessor
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from pylab import cm
-#from pylab import cm
+from .core import SingleMeasurementProcessor, MultiMeasurementProcessor
 
 
 class CheckpointPlotter():
