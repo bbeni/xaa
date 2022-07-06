@@ -11,22 +11,25 @@ class CheckpointPlotter():
         pass
 
     @staticmethod
-    def name(i, j=None):
+    def name(smp:SingleMeasurementProcessor, i, j=None):
+        name = smp.y_checkpoints_names[i]
+        if name is not None:
+            return name
         return f'Checkpoint {i}' if j is None else f'Checkpoint {i} - {j}'
 
     def plot(self, smp:SingleMeasurementProcessor):
         for i, cp in enumerate(smp.get_checkpoints()):
             if len(cp) == 3:
                 x, ya, yb = cp
-                plt.plot(x, ya, label=CheckpointPlotter.name(i) + ' filter a')
-                plt.plot(x, yb, label=CheckpointPlotter.name(i) + ' filter b')
+                plt.plot(x, ya, label=CheckpointPlotter.name(smp, i) + ' filter a')
+                plt.plot(x, yb, label=CheckpointPlotter.name(smp, i) + ' filter b')
             elif len(cp[1].shape) == 1:
                 x, y = cp
-                plt.plot(x, y, label=CheckpointPlotter.name(i))
+                plt.plot(x, y, label=CheckpointPlotter.name(smp, i))
             elif len(cp[1].shape) == 2:
                 x, ys = cp
                 for j, y in enumerate(ys):
-                    plt.plot(x, y, label=CheckpointPlotter.name(i, j))
+                    plt.plot(x, y, label=CheckpointPlotter.name(smp, i, j))
 
         plt.legend()
         plt.show()
@@ -148,9 +151,12 @@ class OneAxisPlot():
         self.axis_naming(xlabel, ylabel)
 
 
-    def plot(self, x, y, label, color_nr=-1):
+    def plot(self, x, y, label, color_nr=-1, scatter=False):
         c = self.colors(color_nr) if color_nr >= 0 else 'k'
-        self.ax.plot(x, y, label=label, color=c)
+        if not scatter:
+            self.ax.plot(x, y, label=label, color=c)
+        else:
+            self.ax.scatter(x, y, label=label, color=c)
 
     def axis_naming(self, xlabel, ylabel):
         self.ax.set_xlabel(xlabel, labelpad=0)

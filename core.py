@@ -5,7 +5,7 @@ import numpy as np
 from typing import Union, List, Iterator
 
 from operations import Operation, PipelineOperation, TransformOperation, TransformOperationXY, SplitOperation, CombineOperation, CollapseOperation, Cut
-from operations import Back, BackTo, CheckPoint
+from operations import Back, BackTo, CheckPoint, BackToNamed
 
 from helpers import common_bounds, interpolate, StoragePool
 
@@ -84,6 +84,11 @@ class SingleMeasurementProcessor:
         self.pipeline = []
 
         self.y_checkpoints = []
+        self.y_checkpoints_names = []
+        self.named_checkpoints = {}
+
+        self.name_to_index = {}
+
         self.storage_pool = StoragePool()
 
     def get_x(self):
@@ -204,12 +209,27 @@ class SingleMeasurementProcessor:
                     index = operation.to
                     block = deepcopy(self.xy_blocks[index])
 
+                elif isinstance(operation, BackToNamed):
+                    if operation.name in self.name_to_index:
+                        index = self.name_to_index[operation.name]
+                        block = deepcopy(self.xy_blocks[index])
+                    else:
+                        raise NameError('No CheckPoint named "{}" found so far.'.format(operation.name))
+
                 elif isinstance(operation, CheckPoint):
+                    name = operation.name # is None if not named
+                    self.y_checkpoints_names.append(name)
 
                     if isinstance(block, XYBlock):
                         self.y_checkpoints.append([block.x, block.y])
+                        if name is not None:
+                            self.name_to_index[name] = i
+                            self.named_checkpoints[name] = [block.x, block.y]
                     else:
                         self.y_checkpoints.append([block.x, block.ya, block.yb])
+                        if name is not None:
+                            self.named_checkpoints[name] = [block.x, block.ya, block.yb]
+                            self.name_to_index[name] = i
                 else:
                     raise NotImplementedError()
 
@@ -256,6 +276,46 @@ class SingleMeasurementProcessor:
 
     def get_checkpoint(self, index):
         return self.y_checkpoints[index]
+
+    def get_named_checkpoint(self, name):
+        return self.named_checkpoints[name]
+
+    def get_named_checkpoints(self):
+        return self.named_checkpoints
+
+    def df_from_named(self):
+        '''makes a pandas dataframe from the named checkpoints'''
+
+        names = list(self.get_named_checkpoints().keys())
+        values = list(self.get_named_checkpoints().values())
+
+        y_values = [v[1:] for v in values]
+        x_values = [v[0] for v in values]
+
+
+        for x in x_values[1:]:
+            if not (x_values[0] == x).all():
+                raise ValueError("the x values changed. (maybe used Cut between Checkpoints?) so we can't save it one dataframe")
+
+        y_values_new = []
+        names_new = []
+
+        for i, y in enumerate(y_values):
+            if len(y) <= 1:
+                y_values_new.append(y[0])
+                names_new.append(names[i])
+            elif len(y) > 1:
+                for j, y1 in enumerate(y):
+                    names_new.append(names[i] + ' ' + str(j+1))
+                    y_values_new.append(y[j])
+
+        column_names = names_new
+        data = np.array(y_values_new).T
+
+        df = pd.DataFrame(data, index=x_values[0], columns=column_names)
+        return df
+
+
 
     def summary(self):
         raise NotImplementedError()

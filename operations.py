@@ -79,17 +79,24 @@ class BackTo(PipelineOperation):
         super().__init__()
         self.to = to
 
+class BackToNamed(PipelineOperation):
+    def __init__(self, name):
+        super().__init__()
+        self.name = name
+
 class CheckPoint(PipelineOperation):
-    pass
+    def __init__(self, name=None):
+        super(CheckPoint, self).__init__()
+        '''if named you can get it with get_checkpoint_named(name)'''
+        self.name = name
 
 class Average(CollapseOperation):
     def do(self, x, y):
         return np.average(y, axis=0)
 
 class Flip(TransformOperation):
-    ## TODO: broken after split operation
     def do(self, x, y):
-        return x, -y
+        return -y
 
 class ApplyFunctionToY(TransformOperation):
     expected_params = ['function']
