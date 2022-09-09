@@ -11,6 +11,12 @@ from .helpers import common_bounds, interpolate, StoragePool
 
 
 class XYBlock:
+    """
+    Main Data Block. Only used internally.
+
+    Stores an x and a y array that are the same dimensions. It is the main object to store
+    all pipline steps.
+    """
     def __init__(self, x, y, name=''):
         self.x = x
         self.y = y
@@ -47,6 +53,7 @@ class XYBlock:
         self.y = collapse.do(self.x, self.y)
 
 class XYBlockSplit:
+    """XYBlock gets transformed to XYBlock split, after a Filter Operation."""
     def __init__(self, x, ya, yb, name=''):
         self.x = x
         self.ya = ya
@@ -73,6 +80,27 @@ class XYBlockSplit:
         self.yb = collapse.do(self.x, self.yb)
 
 class SingleMeasurementProcessor:
+    """
+    Main object to orchestrate all operations and all data.
+
+    This is where all the magic happens.
+    TODO: make easy example
+
+    Methods
+    -------
+    add_data(dfs:[pd.Dataframe, .. ], x_colum="x", y_column="y")
+        feed it with XAS data from a pandas DataFrame.
+    add_pipline(pipline=[Average, CheckPoint("test"), .. ])
+        add a processing pipeline.
+    add_params({"a":123})
+        add parameters if the pipeline Operations need them.
+    check_missing_params()
+        checks for missing params and prints their names.
+    run()
+        runs all operations in the pipline to the added data.
+    get_named_checkpoint(name="test")
+        returns the x and y data from that checkpoint.
+    """
     def __init__(self):
         self.processed = False
         self.dfs = None
