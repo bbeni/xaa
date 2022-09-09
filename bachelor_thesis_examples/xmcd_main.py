@@ -76,32 +76,39 @@ def thole_cara_sz(int1, int2, int_plus, n, l, c):
 
 
 def guo_gupta_lz(int_xmcd, int_plus, n_3d):
-    return -4/3*int_xmcd[-1]/int_plus * (10-n_3d)
+    return -4/3*int_xmcd/int_plus * (10-n_3d)
 
 
-def guo_gupta_sz(int_xmcd, int_plus, mid, n_3d):
-    intL3 = int_xmcd[mid] - int_xmcd[0]
-    intL2 = int_xmcd[-1] - int_xmcd[mid]
-    return -1 * (2*intL3 - 4*intL2)/int_plus * (10 - n_3d)
+def guo_gupta_sz(int_l2, int_l3, int_plus, n_3d):
+    return -1 * (2*int_l3 - 4*int_l2)/int_plus * (10 - n_3d)
 
 
-def sum_rules_basic_pipline(processor, mid_index, n, l, c, n_3d):
+def sum_rules_basic_pipline(processor, n, l, c, n_3d, l3index, l2index):
+    a, b = l3index
+    c, d = l2index
+
     int_xmcd = processor.get_named_checkpoint('integral_xmcd')[1]
     int_xas = processor.get_named_checkpoint('integral_xas')[1]
 
+    int_l3 = int_xmcd[b] - int_xmcd[a]
+    int_l2 = int_xmcd[d] - int_xmcd[c]
+    int_xas_l3 = int_xas[b] - int_xas[a]
+    int_xas_l2 = int_xas[d] - int_xas[c]
+
     # sum rules by thole and cara lz
-    int_minus = int_xmcd[-1]
-    int_plus = 3 * int_xas[-1]
-    lz = thole_cara_lz(rho=int_minus / int_plus, n=n, l=l, c=c)
+    rho = (int_l2 + int_l3)/(3*(int_xas_l2 + int_xas_l3))
+    rho = int_xmcd[-1]/(3*int_xas[-1])
+    lz = thole_cara_lz(rho=rho, n=n, l=l, c=c)
 
     # sum rules by thole and cara sz
-    int1 = int_xmcd[-1] - int_xmcd[mid_index]
-    int2 = int_xmcd[mid_index]
-    sz = thole_cara_sz(int1=int1, int2=int2, int_plus=int_plus, n=2, l=2, c=1)
+    #int1 = int_xmcd[-1] - int_xmcd[mid_index]
+    #int2 = int_xmcd[mid_index]
+    #sz = thole_cara_sz(int1=int1, int2=int2, int_plus=int_plus, n=2, l=2, c=1)
+    sz = 0
 
     # sum rule guo gupta
-    sz_g = guo_gupta_sz(int_xmcd, int_plus, mid_index, n_3d)
-    lz_g = guo_gupta_lz(int_xmcd, int_plus, n_3d)
+    sz_g = guo_gupta_sz(int_l2, int_l3, int_xas_l2 + int_xas_l3, n_3d)
+    lz_g = guo_gupta_lz(int_l2 + int_l3, int_xas_l2 + int_xas_l3, n_3d)
 
     return lz, sz, lz_g, sz_g
 
@@ -150,6 +157,9 @@ def ni_xmcd_thickness():
     c = 1
     n_3d = 8.2 # cluster model analysis reference 27 guo gupta
 
+    l2 = 868, 875
+    l3 = 850, 861
+
     lz = []
     sz = []
     lzg = []
@@ -160,10 +170,15 @@ def ni_xmcd_thickness():
         p = process_measurement(measurements_range, pipeline_basic_TEY_xmcd, ni_thick_params, 'mu_normalized')
 
         df = p.df_from_named()
-        df.to_csv('./out/ni_thick/ni_xmcd_{}.csv'.format(label))
+        df.to_csv('./out/ni_thick/{}.csv'.format(label))
 
-        mid = int(3/5 *(len(p.get_checkpoint(3)[1])))
-        Lz, Sz, Lz_guo, Sz_guo = sum_rules_basic_pipline(processor=p, mid_index=mid, n=n, l=l, c=c, n_3d=n_3d)
+        x = p.get_checkpoint(1)[0]
+        index_l2 = closest_idx(x, l2[0]), closest_idx(x, l2[1])
+        index_l3 = closest_idx(x, l3[0]), closest_idx(x, l3[1])
+
+        Lz, Sz, Lz_guo, Sz_guo = sum_rules_basic_pipline(processor=p, n=n, l=l, c=c, n_3d=n_3d, l2index=index_l2,
+                                                         l3index=index_l3)
+
         sz.append(Sz)
         lz.append(Lz)
         szg.append(Sz_guo)
@@ -194,8 +209,8 @@ def ni_xmcd_strain():
     #  tfy     f1 bad, f2 looks good, f3 bad, f5 bad, f4 ok
     #a_list = [2/3-0.08, 2/3-0.07, 2/3-0.09, 2/3-0.1, 2/3+0.3]
 
-
-    mid_point = 864 # eV
+    l2 = 868, 875
+    l3 = 850, 861
 
     n = 2
     l = 2
@@ -217,11 +232,13 @@ def ni_xmcd_strain():
         p = process_measurement(measurements_range, pipeline_basic_TEY_xmcd, ni_strain_params, 'mu_normalized')
 
         df = p.df_from_named()
-        df.to_csv('./out/ni_strain/ni_xmcd_{}.csv'.format(label))
+        df.to_csv('./out/ni_strain/{}.csv'.format(label))
 
-        mid = closest_idx(p.get_checkpoint(3)[0], mid_point) #int(22 / 35 * (len(p.get_checkpoint(3)[1])))
-        print(label, mid, p.get_checkpoint(3)[1][mid])
-        Lz, Sz, Lz_guo, Sz_guo = sum_rules_basic_pipline(processor=p, mid_index=mid, n=n, l=l, c=c, n_3d=n_3d)
+        x = p.get_checkpoint(1)[0]
+        index_l2 = closest_idx(x, l2[0]), closest_idx(x, l2[1])
+        index_l3 = closest_idx(x, l3[0]), closest_idx(x, l3[1])
+
+        Lz, Sz, Lz_guo, Sz_guo = sum_rules_basic_pipline(processor=p, n=n, l=l, c=c, n_3d=n_3d, l2index=index_l2, l3index=index_l3)
         sz.append(Sz)
         lz.append(Lz)
         szg.append(Sz_guo)
@@ -270,7 +287,7 @@ def mn_xmcd_thickness():
         p = process_measurement(measurements_range, pipeline_TEY_xmcd, mn_thick_params, 'mu_normalized')
 
         df = p.df_from_named()
-        df.to_csv('./out/mn_thick/ni_xmcd_{}.csv'.format(label))
+        df.to_csv('./out/mn_thick/{}.csv'.format(label))
 
         mid = closest_idx(p.get_checkpoint(3)[0], mid_point) #int(22 / 35 * (len(p.get_checkpoint(3)[1])))
         Lz, Sz, Lz_guo, Sz_guo = sum_rules_basic_pipline(processor=p, mid_index=mid, n=n, l=l, c=c, n_3d=n_3d)
@@ -285,12 +302,14 @@ def mn_xmcd_thickness():
     print_sumrules_thick(lz, sz, lzg, szg)
     save_sumrules_csv(lz, sz, lzg, szg, 'mn_xmcd_thick', index_thick)
 
+def mn_xmcd_strain():
+    pass
 
 def main():
     ni_xmcd_thickness()
     ni_xmcd_strain()
     mn_xmcd_thickness()
-    #mn_xmcd_thickness()
+    mn_xmcd_strain()
 
 if __name__ == '__main__':
     main()

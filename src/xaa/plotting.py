@@ -149,6 +149,8 @@ class OneAxisPlot():
 
         self.axis_naming(xlabel, ylabel)
 
+        self.legend_kwargs = None
+
 
     def plot(self, x, y, label, color_nr=-1, scatter=False):
         c = self.colors(color_nr) if color_nr >= 0 else 'k'
@@ -167,8 +169,15 @@ class OneAxisPlot():
     def ylim(self, ylim):
         plt.ylim(ylim)
 
+
+    def set_legend_layout(self, **kwargs):
+        self.legend_kwargs = kwargs
+
     def finish(self, save=''):
-        self.ax.legend(bbox_to_anchor=(1, 0), loc='lower right', frameon=False, fontsize=9)
+        if self.legend_kwargs:
+            self.ax.legend(**self.legend_kwargs)
+        else:
+            self.ax.legend(bbox_to_anchor=(1, 0), loc='lower right', frameon=False, fontsize=9)
         if not save:
             plt.show()
         else:
