@@ -163,7 +163,9 @@ def tfy_vs_tey():
     plotter = TFYTEYComparePlot()
     x1, y1 = smpTEY.get_checkpoint(-1)
     x2, y2 = smpTFY.get_checkpoint(-1)
-    plotter.plot_xy(x1, x2, y1, y2)
+    x3, y3 = x2, 1/y2
+    plotter.plot_xy(x1, x2, x3, y1, y2, y3)
+
 
 
 def fermi_bg_example():
@@ -231,5 +233,5 @@ if __name__ == "__main__":
     #test2()
     #strain_ni_xld_test()
     #thickness_ni_xld_fy_test()
-    #tfy_vs_tey()
-    fermi_bg_example()
+    tfy_vs_tey()
+    #fermi_bg_example()
