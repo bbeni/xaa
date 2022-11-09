@@ -63,19 +63,19 @@ class CheckpointPlotterMulti():
 
 
 class TFYTEYComparePlot():
-    """Plot SmpA and SmpB, last CheckPoint"""
+    """Plot 3 xas curves labeled with tey tfy 1/tfy, last CheckPoint"""
     def __init__(self):
         pass
 
-    def plot_xy(self, x1, x2, y1, y2):
+    def plot_xy(self, x1, x2, x3, y1, y2, y3):
         # from https://towardsdatascience.com/an-introduction-to-making-scientific-publication-plots-with-python-ea19dfa7f51e
         # Edit the font, font size, and axes width
         mpl.rcParams['font.family'] = 'Avenir'
         plt.rcParams['font.size'] = 11
         plt.rcParams['axes.linewidth'] = 1
-        colors = cm.get_cmap('tab10', 2)
+        colors = cm.get_cmap('tab10', 3)
 
-        fig = plt.figure(figsize=(3.54, 2))
+        fig = plt.figure(figsize=(3.54*1.5, 2*1.5))
         ax = fig.add_axes([0.15, 0.2, 0.84, 0.79])
 
         # Edit the major and minor ticks of the x and y axes
@@ -86,14 +86,16 @@ class TFYTEYComparePlot():
 
         ax.plot(x1, y1, label='Electron Yield', color=colors(0))
         ax.plot(x2, y2, label='Fluorescence Yield', color=colors(1))
+        ax.plot(x3, y3, label='1/(Fluorescence Yield))', color=colors(2))
 
         ax.legend(bbox_to_anchor=(1, 1), loc=1, frameon=False, fontsize=11)
 
         ax.set_xlabel('Photon Energy [eV]', labelpad=0)
         ax.set_ylabel('Normalized $\mu$ (arb.units)', labelpad=0)
 
-        plt.show()
-        #plt.savefig('tfyvstey.pdf', dpi=300)
+        #plt.show()
+
+        plt.savefig('tfyvstey.pdf', dpi=300)
 
 
     def plot_old(self, smpTEY:SingleMeasurementProcessor, smpTFY:SingleMeasurementProcessor):
