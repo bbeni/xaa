@@ -19,12 +19,12 @@ First install [anaconda](https://www.anaconda.com) ar [miniconda](https://conda.
 
 ## Working principle ##
 
-
 Input Data is assumed to consist of a 1 dimensional x values array (usally X-Ray energy values) and y values data which can be 1 or 2 dimensional.
 
 A pipepline is defined as a list of `Operation`s, that will be applied in order to manipulate the data.
 
 Operations that change the data include:
+
 * `Average` can only be applied to 2 d y data. averages multiple y measurements.
 * `Flip` maps y &rarr; -y
 * `Add` maps y &rarr; y + c
@@ -36,17 +36,18 @@ Operations that change the data include:
 * `CombineAverage` maps 1d split data yA, yB &rarr; (yA + yB)/2
 
 Higher level manipulations include:
+
 * `Integrate` does a numerical cumulative integral from x_min to x_max of y.
 * `LineBG(line_range)` subtracts a line ax + b fitted to line_range
 * `FermiBg` subtracts a fermi type double step background. expected_params = ['peak_1', 'peak_2', 'post', 'delta', 'a']
 
 
 Operations that manipulate the pipeline include:
+
 * `Checkpoint` intermediate x and y data store to extract intermediate steps.
 * `BackToNamed('a')` is used to jump back in the pipeline to a named `Checkpoint(name='a')`
 * `BackTo(2)` jumps back to the second pipline operation state.
 * `Back(3)` jumps back 3 pipline operations.
-
 
 
 ## Example ##
