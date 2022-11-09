@@ -20,7 +20,7 @@ def load_dm(filename):
     return DataManager(data_file=filename, load_cached=True)
 
 
-def get_measurements_boreas_file(filename, indices: Union[List[int], List[List[int]]]) \
+def boreas_file_to_dataframes(filename, indices: Union[List[int], List[List[int]]]) \
         -> Union[List[pd.DataFrame], List[List[pd.DataFrame]]]:
     """indides either a list of indices or a list[list of indices]"""
     if type(indices[0]) is range or type(indices[0]) is list:

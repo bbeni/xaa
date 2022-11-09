@@ -7,7 +7,7 @@ from xaa.core import SingleMeasurementProcessor, MultiMeasurementProcessor
 from xaa.plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
 from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate,\
     SplitBy, Average, CombineDifference, Cut, CombineAverage, Add, Flip, ApplyFunctionToY, BackToNamed
-from xaa.loaders.util import get_measurements_boreas_file
+from xaa.loaders.util import boreas_file_to_dataframes
 from xaa.helpers import closest_idx
 
 from plot.plot_templates import XASPlot
@@ -72,7 +72,7 @@ filter_linear = lambda df: df.polarization[0] > np.pi/4
 pipeline_basic_xas = [SplitBy(filter_linear), Average, CombineAverage, LineBG, Normalize, CheckPoint('xas')]
 
 def process_measurement(measurements_range, pipeline, pipeline_params, y_column):
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', measurements_range)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', measurements_range)
 
     p = SingleMeasurementProcessor()
     p.add_pipeline(pipeline)

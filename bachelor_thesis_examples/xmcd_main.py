@@ -7,7 +7,7 @@ from xaa.core import SingleMeasurementProcessor, MultiMeasurementProcessor
 from xaa.plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
 from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate,\
     SplitBy, Average, CombineDifference, Cut, CombineAverage, Add, Flip, ApplyFunctionToY, BackToNamed
-from xaa.loaders.util import get_measurements_boreas_file
+from xaa.loaders.util import boreas_file_to_dataframes
 from xaa.helpers import closest_idx
 
 labels_name = ['LAO', 'NGO', 'LSAT', 'LGO', 'STO', '3uc', '6uc', '10uc', '21uc']
@@ -53,7 +53,7 @@ pipeline_basic_TFY_xmcd = [SplitBy(filter_circular), Average, ApplyFunctionToY(f
                            Integrate, CheckPoint('integral_xmcd')]
 
 def process_measurement(measurements_range, pipeline, pipeline_params, y_column):
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', measurements_range)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', measurements_range)
 
     p = SingleMeasurementProcessor()
     p.add_pipeline(pipeline)

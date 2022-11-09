@@ -5,11 +5,11 @@ import numpy as np
 from xaa.core import SingleMeasurementProcessor, MultiMeasurementProcessor
 from xaa.plotting import CheckpointPlotter, CheckpointPlotterMulti, TFYTEYComparePlot, OneAxisPlot
 from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate, SplitBy, Average, CombineDifference, Cut, CombineAverage, Add
-from xaa.loaders.util import get_measurements_boreas_file
+from xaa.loaders.util import boreas_file_to_dataframes
 
 def test():
     # LAO Ni XLD
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', range(42+1,  46+1))
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', range(42 + 1, 46 + 1))
 
     pipeline = [LineBG, Average, FermiBG, Normalize(save='m1'),
                 BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, CheckPoint, FermiBG, CheckPoint,
@@ -37,7 +37,7 @@ def test():
     plotter.plot(p)
 
 def test2():
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', [range(42+1,  46+1), range(47+1, 51+1)])
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', [range(42 + 1, 46 + 1), range(47 + 1, 51 + 1)])
 
     pipeline = [LineBG, CheckPoint, Average, FermiBG, CheckPoint, Normalize(save='m1'),
                 BackTo(0), SplitBy, Average, Normalize(to='m1'), LineBG, FermiBG, CheckPoint,
@@ -78,7 +78,7 @@ def strain_ni_xld_test():
                      'post': (878, 883),
                      'a': 1/3, 'delta': 1.5}
 
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', indices_ranges)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', indices_ranges)
 
     filter_horizontal = lambda df: df.polarization[0] < np.pi/4
     pipeline = [Average, LineBG, FermiBG, Normalize(save='m1'),
@@ -111,7 +111,7 @@ def thickness_ni_xld_fy_test():
                      'post': (878, 883),
                      'a': 1/3, 'delta': 1.5}
 
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', indices_ranges)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', indices_ranges)
 
     filter_horizontal = lambda df: df.polarization[0] < np.pi/4
     pipeline = [Average, LineBG, FermiBG, Normalize(save='m1'),
@@ -139,7 +139,7 @@ def tfy_vs_tey():
     data_range = range(263+1, 271+1) # mn // sto xmcd low temp
     cut_range = [634, 660]
 
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', data_range)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', data_range)
 
     def filter_circular(df):
         return df.polarization[0] < 0
@@ -184,7 +184,7 @@ def fermi_bg_example():
                        'a':2/3
                        }
 
-    dataframes = get_measurements_boreas_file('data_files/SH1_Tue09.dat', data_range)
+    dataframes = boreas_file_to_dataframes('data_files/SH1_Tue09.dat', data_range)
 
 
     smp = SingleMeasurementProcessor()
