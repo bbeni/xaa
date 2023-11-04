@@ -186,12 +186,12 @@ class OneAxisPlot():
             self.ax.scatter(x, y, label=label, color=c)
 
 
-    def errorbar(self, x, y, y_err, label, color_nr=-1, scatter=False):
+    def errorbar(self, x, y, y_err, label, color_nr=-1, scatter=False, fmt='o'):
         c = self.colors(color_nr) if color_nr >= 0 else 'k'
         if not scatter:
             self.ax.errorbar(x, y, yerr=y_err*2, label=label, color=c)
         else:
-            self.ax.errorbar(x, y, yerr=y_err*2, fmt='s', markersize=3, capsize=3, label=label, color=c)
+            self.ax.errorbar(x, y, yerr=y_err*2, fmt=fmt, markersize=5, capsize=0, label=label, color=c)
 
 
     def axis_naming(self, xlabel, ylabel):
