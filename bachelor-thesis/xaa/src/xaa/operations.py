@@ -51,11 +51,15 @@ class TransformOperation(Operation):
     def do(self, x, y):
         raise NotImplementedError()
         return y
+    def clear_temp(self):
+        pass
 
 class TransformOperationXY(Operation):
     def do(self, x, y):
         raise NotImplementedError()
         return x, y
+    def clear_temp(self):
+        pass
 
 class SplitOperation(Operation):
     def do(self, x, y, df: pd.DataFrame) -> bool:
@@ -170,6 +174,27 @@ class NormalizePeak(TransformOperation):
             self.set_global(self.save, m)
         y /= m
         return y
+
+class PreEdgeScaleToFirst(TransformOperation):
+    expected_params = ['pre_edge_range']
+
+    def clear_temp(self):
+        self.is_first = True
+
+    def do(self, x, y):
+        pre_edge_range = self.get_param('pre_edge_range')
+        ia, ib = closest_idx(x, pre_edge_range[0]), closest_idx(x, pre_edge_range[1])
+        assert(ia < ib)    
+        mean = np.mean(y[ia:ib])
+
+        if self.is_first:
+            self.is_first = False
+            self.first_mean = mean
+            return y
+        else:
+            return self.first_mean / mean * y
+
+
 
 def fermi_step(x, y, peak_1, peak_2, post, delta, a):
     def mu_step(x, E_l3, E_l2, step_e, delta, h, a):

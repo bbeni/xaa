@@ -26,6 +26,7 @@ class XYBlock:
         return len(self.y.shape)
 
     def apply_transform(self, transform: TransformOperation):
+        transform.clear_temp()
         if self.level() == 1:
             self.y = transform.do(self.x, self.y)
         elif self.level() == 2:
@@ -35,6 +36,7 @@ class XYBlock:
             raise NotImplementedError('apply transform level ' + self.level())
 
     def apply_transform_xy(self, transform: TransformOperationXY):
+        transform.clear_temp()
         if self.level() == 1:
             self.x, self.y = transform.do(self.x, self.y)
         elif self.level() == 2:
@@ -318,12 +320,13 @@ class SingleMeasurementProcessor:
         names_new = []
 
         for i, y in enumerate(y_values):
+            y = np.array(y)
             if len(y) <= 1:
                 y_values_new.append(y[0])
                 names_new.append(names[i])
             elif len(y) > 1:
                 for j, y1 in enumerate(y):
-                    names_new.append(names[i] + ' ' + str(j+1))
+                    names_new.append(names[i] + '_' + str(j+1))
                     y_values_new.append(y[j])
 
         column_names = names_new
