@@ -30,8 +30,11 @@ class Operation:
                 missing.append(param_name)
         return missing
 
-    def do(self):
+    def do(self, x, y):
         raise NotImplementedError()
+
+    def post(self, x, y):
+        return y
 
     # ugly
     def get_global(self, key):
@@ -193,6 +196,42 @@ class PreEdgeScaleToFirst(TransformOperation):
             return y
         else:
             return self.first_mean / mean * y
+
+class PreAndPostEdgeScaleToFirst(TransformOperation):
+    expected_params = ['pre_edge_range', 'post_edge_range', 'pre_weight']
+
+    def clear_temp(self):
+        self.is_first = True
+
+    def do(self, x, y):
+        pre_edge_range = self.get_param('pre_edge_range')
+        post_edge_range = self.get_param('post_edge_range')
+        weight = self.get_param('pre_weight')
+
+        ia, ib = closest_idx(x, pre_edge_range[0]), closest_idx(x, pre_edge_range[1])
+        assert(ia < ib)    
+        mean_pre = np.mean(y[ia:ib])
+        ia, ib = closest_idx(x, post_edge_range[0]), closest_idx(x, post_edge_range[1])
+        assert(ia < ib)    
+        mean_post = np.mean(y[ia:ib])
+        mean = weight*mean_pre + (1-weight)*mean_post
+
+        if self.is_first:
+            self.is_first = False
+            self.first_mean = mean
+            return y
+        else:
+            return self.first_mean / mean * y
+
+
+class BringToZero(TransformOperation):
+    expected_params = ['to_zero_range']
+    def do(self, x, y):
+        to_zero_range = self.get_param('to_zero_range')
+        ia, ib = closest_idx(x, to_zero_range[0]), closest_idx(x, to_zero_range[1])
+        m = np.mean(y[ia:ib])
+        return y - m
+
 
 
 
@@ -483,6 +522,40 @@ class LineBGRemove(TransformOperation):
         fitted = model.fit(y[ia:ib], p, x=x[ia:ib])
         result = fitted.eval(x=x)
         return y - result
+
+class AvgLineBGRemove(TransformOperation):
+    expected_params = ['line_range']
+    def clear_temp(self):
+        self.sum = None
+        self.n = None 
+
+    def do(self, x, y):
+        def line(x, slope, intercept):
+            return slope*x + intercept
+        model = Model(line)
+        p = model.make_params(intercept=-1, slope=0.001)
+        ia, ib = closest_idx(x, self.get_param('line_range')[0]), closest_idx(x, self.get_param('line_range')[1])
+        if (ib <= ia):
+            ib = ia+2
+        fitted = model.fit(y[ia:ib], p, x=x[ia:ib])
+        result = fitted.eval(x=x)
+
+        if self.sum is None:
+            self.sum = result
+            self.n = 1
+        else:
+            self.sum += result
+            self.n += 1
+        
+        # just do nothing and in post remove the same line for every measurement
+        return y
+
+    def post(self, x, y):
+        assert(self.sum is not None)
+        avg = self.sum/self.n
+        return y - avg
+
+
 
 class Integrate(TransformOperation):
     def do(self, x, y):

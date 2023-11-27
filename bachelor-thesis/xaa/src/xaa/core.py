@@ -35,6 +35,15 @@ class XYBlock:
         else:
             raise NotImplementedError('apply transform level ' + self.level())
 
+    def apply_post_transform(self, transform: TransformOperation):
+        if self.level() == 1:
+            self.y = transform.post(self.x, self.y)
+        elif self.level() == 2:
+            for i in range(self.y.shape[0]):
+                self.y[i,:] = transform.post(self.x, self.y[i,:])
+        else:
+            raise NotImplementedError('apply transform level ' + self.level())
+
     def apply_transform_xy(self, transform: TransformOperationXY):
         transform.clear_temp()
         if self.level() == 1:
@@ -66,6 +75,7 @@ class XYBlockSplit:
         return len(self.ya.shape)
 
     def apply_transform(self, transform: TransformOperation):
+        transform.clear_temp()
         if self.level() == 1:
             self.ya = transform.do(self.x, self.ya)
             self.yb = transform.do(self.x, self.yb)
@@ -74,6 +84,18 @@ class XYBlockSplit:
                 self.ya[i, :] = transform.do(self.x, self.ya[i,:])
             for i in range(self.yb.shape[0]):
                 self.yb[i, :] = transform.do(self.x, self.yb[i,:])
+        else:
+            raise NotImplementedError('level ' + self.level())
+
+    def apply_post_transform(self, transform: TransformOperation):
+        if self.level() == 1:
+            self.ya = transform.post(self.x, self.ya)
+            self.yb = transform.post(self.x, self.yb)
+        elif self.level() == 2:
+            for i in range(self.ya.shape[0]):
+                self.ya[i, :] = transform.post(self.x, self.ya[i,:])
+            for i in range(self.yb.shape[0]):
+                self.yb[i, :] = transform.post(self.x, self.yb[i,:])
         else:
             raise NotImplementedError('level ' + self.level())
 
@@ -255,6 +277,7 @@ class SingleMeasurementProcessor:
 
             elif isinstance(operation, TransformOperation):
                 block.apply_transform(operation)
+                block.apply_post_transform(operation)
 
             elif isinstance(operation, TransformOperationXY):
                 block.apply_transform_xy(operation)
