@@ -233,8 +233,6 @@ class BringToZero(TransformOperation):
         return y - m
 
 
-
-
 def fermi_step(x, y, peak_1, peak_2, post, delta, a):
     def mu_step(x, E_l3, E_l2, step_e, delta, h, a):
         b = 1-a
