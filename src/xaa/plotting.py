@@ -5,32 +5,47 @@ from pylab import cm
 from .core import SingleMeasurementProcessor, MultiMeasurementProcessor
 
 
-class CheckpointPlotter():
-    def __init__(self):
-        pass
+class CheckpointPlotter:
+    def __init__(self, named_cps_to_plot=[]):
+        self.named_cps_to_plot = named_cps_to_plot
 
     @staticmethod
-    def name(smp:SingleMeasurementProcessor, i, j=None):
-        name = smp.y_checkpoints_names[i]
-        if name is not None:
-            return name
-        return f'Checkpoint {i}' if j is None else f'Checkpoint {i} - {j}'
+    def name(name:str, j=None):
+        return f'{name}' if j is None else f'{name} - {j}'
 
-    def plot(self, smp:SingleMeasurementProcessor):
-        for i, cp in enumerate(smp.get_checkpoints()):
+    def plot(self, smp:SingleMeasurementProcessor, xlabel='x', ylabel='y', legend=True):
+        plt.figure(dpi=250)
+        for i, (name, cp) in enumerate(smp.get_checkpoints().items()):
+            if self.named_cps_to_plot and not name in self.named_cps_to_plot:
+                continue
+
             if len(cp) == 3:
                 x, ya, yb = cp
-                plt.plot(x, ya, label=CheckpointPlotter.name(smp, i) + ' filter a')
-                plt.plot(x, yb, label=CheckpointPlotter.name(smp, i) + ' filter b')
+
+                if len(ya.shape) > 1:
+                    for y in ya:
+                        plt.plot(x, y, label=CheckpointPlotter.name(name) + ' filter a')
+                else:
+                    plt.plot(x, ya, label=CheckpointPlotter.name(name) + ' filter a')
+
+                if len(yb.shape) > 1:
+                    for y in yb:
+                        plt.plot(x, y, label=CheckpointPlotter.name(name) + ' filter a')
+                else:
+                    plt.plot(x, yb, label=CheckpointPlotter.name(name) + ' filter b')
+
             elif len(cp[1].shape) == 1:
                 x, y = cp
-                plt.plot(x, y, label=CheckpointPlotter.name(smp, i))
+                plt.plot(x, y, label=CheckpointPlotter.name(name))
             elif len(cp[1].shape) == 2:
                 x, ys = cp
                 for j, y in enumerate(ys):
-                    plt.plot(x, y, label=CheckpointPlotter.name(smp, i, j))
+                    plt.plot(x, y, label=CheckpointPlotter.name(name, j))
 
-        plt.legend()
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        if legend:
+            plt.legend()
         plt.show()
 
 class CheckpointPlotterMulti():
@@ -67,7 +82,7 @@ class TFYTEYComparePlot():
     def __init__(self):
         pass
 
-    def plot_xy(self, x1, x2, x3, y1, y2, y3):
+    def plot_xy(self, x1, x2, y1, y2):
         # from https://towardsdatascience.com/an-introduction-to-making-scientific-publication-plots-with-python-ea19dfa7f51e
         # Edit the font, font size, and axes width
         mpl.rcParams['font.family'] = 'Avenir'
@@ -84,19 +99,28 @@ class TFYTEYComparePlot():
         ax.yaxis.set_tick_params(which='major', size=10, width=1, direction='in', right='on')
         ax.yaxis.set_tick_params(which='minor', size=7, width=1, direction='in', right='on')
 
-        ax.plot(x1, y1, label='Electron Yield', color=colors(0))
-        ax.plot(x2, y2, label='Fluorescence Yield', color=colors(1))
-        ax.plot(x3, y3, label='1/(Fluorescence Yield))', color=colors(2))
-
-        ax.legend(bbox_to_anchor=(1, 1), loc=1, frameon=False, fontsize=11)
+        ax.plot(x1, y1, label='Total Electron Yield', color=colors(0))
+        ax.plot(x2, y2, label='Total Fluorescence Yield', color=colors(1))
+        #ax.plot(x3, y3, label='1/(Fluorescence Yield))', color=colors(2))
 
         ax.set_xlabel('Photon Energy [eV]', labelpad=0)
         ax.set_ylabel('Normalized $\mu$ (arb.units)', labelpad=0)
 
+        self.ax = ax
+
         #plt.show()
 
-        plt.savefig('tfyvstey.pdf', dpi=300)
+        #plt.savefig('tfyvstey.pdf', dpi=300)
 
+    def plot_square(self, ll, ur, label):
+        plt.plot([ll[0], ur[0], ur[0], ll[0], ll[0]], [ll[1], ll[1], ur[1], ur[1], ll[1]], label=label)
+
+    def finish(self, fname=None):
+        self.ax.legend(bbox_to_anchor=(1, 1), loc=1, frameon=False, fontsize=11)
+        if fname:
+            plt.savefig(fname, dpi=300)
+        else:
+            plt.show()
 
     def plot_old(self, smpTEY:SingleMeasurementProcessor, smpTFY:SingleMeasurementProcessor):
         # modified example from https://www.machinelearningplus.com/plots/top-50-matplotlib-visualizations-the-master-plots-python/
@@ -134,7 +158,8 @@ class OneAxisPlot():
         # from https://towardsdatascience.com/an-introduction-to-making-scientific-publication-plots-with-python-ea19dfa7f51e
         # Edit the font, font size, and axes width
         mpl.rcParams['font.family'] = 'Avenir'
-        plt.rcParams['font.size'] = 11
+
+        plt.rcParams['font.size'] = 12
         plt.rcParams['axes.linewidth'] = 1
         self.colors = cm.get_cmap(color_map_name, n_colors)
 
@@ -153,13 +178,19 @@ class OneAxisPlot():
 
         self.legend_kwargs = None
 
-
     def plot(self, x, y, label, color_nr=-1, scatter=False):
         c = self.colors(color_nr) if color_nr >= 0 else 'k'
         if not scatter:
             self.ax.plot(x, y, label=label, color=c)
         else:
             self.ax.scatter(x, y, label=label, color=c)
+
+    def errorbar(self, x, y, y_err, label, color_nr=-1, scatter=False, fmt='o'):
+        c = self.colors(color_nr) if color_nr >= 0 else 'k'
+        if not scatter:
+            self.ax.errorbar(x, y, yerr=y_err*2, label=label, color=c)
+        else:
+            self.ax.errorbar(x, y, yerr=y_err*2, fmt=fmt, markersize=5, capsize=0, label=label, color=c)
 
     def axis_naming(self, xlabel, ylabel):
         self.ax.set_xlabel(xlabel, labelpad=0)

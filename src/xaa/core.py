@@ -26,6 +26,7 @@ class XYBlock:
         return len(self.y.shape)
 
     def apply_transform(self, transform: TransformOperation):
+        transform.clear_temp()
         if self.level() == 1:
             self.y = transform.do(self.x, self.y)
         elif self.level() == 2:
@@ -34,7 +35,17 @@ class XYBlock:
         else:
             raise NotImplementedError('apply transform level ' + self.level())
 
+    def apply_post_transform(self, transform: TransformOperation):
+        if self.level() == 1:
+            self.y = transform.post(self.x, self.y)
+        elif self.level() == 2:
+            for i in range(self.y.shape[0]):
+                self.y[i,:] = transform.post(self.x, self.y[i,:])
+        else:
+            raise NotImplementedError('apply transform level ' + self.level())
+
     def apply_transform_xy(self, transform: TransformOperationXY):
+        transform.clear_temp()
         if self.level() == 1:
             self.x, self.y = transform.do(self.x, self.y)
         elif self.level() == 2:
@@ -64,6 +75,8 @@ class XYBlockSplit:
         return len(self.ya.shape)
 
     def apply_transform(self, transform: TransformOperation):
+
+        transform.clear_temp()
         if self.level() == 1:
             self.ya = transform.do(self.x, self.ya)
             self.yb = transform.do(self.x, self.yb)
@@ -72,6 +85,18 @@ class XYBlockSplit:
                 self.ya[i, :] = transform.do(self.x, self.ya[i,:])
             for i in range(self.yb.shape[0]):
                 self.yb[i, :] = transform.do(self.x, self.yb[i,:])
+        else:
+            raise NotImplementedError('level ' + self.level())
+
+    def apply_post_transform(self, transform: TransformOperation):
+        if self.level() == 1:
+            self.ya = transform.post(self.x, self.ya)
+            self.yb = transform.post(self.x, self.yb)
+        elif self.level() == 2:
+            for i in range(self.ya.shape[0]):
+                self.ya[i, :] = transform.post(self.x, self.ya[i,:])
+            for i in range(self.yb.shape[0]):
+                self.yb[i, :] = transform.post(self.x, self.yb[i,:])
         else:
             raise NotImplementedError('level ' + self.level())
 
@@ -111,10 +136,8 @@ class SingleMeasurementProcessor:
         self.params = {}
         self.pipeline = []
 
-        self.y_checkpoints = []
-        self.y_checkpoints_names = []
-        self.named_checkpoints = {}
 
+        self.named_checkpoints = {}
         self.name_to_index = {}
 
         self.storage_pool = StoragePool()
@@ -245,24 +268,19 @@ class SingleMeasurementProcessor:
                         raise NameError('No CheckPoint named "{}" found so far.'.format(operation.name))
 
                 elif isinstance(operation, CheckPoint):
-                    name = operation.name # is None if not named
-                    self.y_checkpoints_names.append(name)
 
+                    name = operation.name
+                    self.name_to_index[name] = i
                     if isinstance(block, XYBlock):
-                        self.y_checkpoints.append([block.x, block.y])
-                        if name is not None:
-                            self.name_to_index[name] = i
-                            self.named_checkpoints[name] = [block.x, block.y]
+                        self.named_checkpoints[name] = [block.x, block.y]
                     else:
-                        self.y_checkpoints.append([block.x, block.ya, block.yb])
-                        if name is not None:
-                            self.named_checkpoints[name] = [block.x, block.ya, block.yb]
-                            self.name_to_index[name] = i
+                        self.named_checkpoints[name] = [block.x, block.ya, block.yb]
                 else:
                     raise NotImplementedError()
 
             elif isinstance(operation, TransformOperation):
                 block.apply_transform(operation)
+                block.apply_post_transform(operation)
 
             elif isinstance(operation, TransformOperationXY):
                 block.apply_transform_xy(operation)
@@ -299,27 +317,26 @@ class SingleMeasurementProcessor:
 
             self.xy_blocks.append(block)
 
-    def get_checkpoints(self) -> List:
-        return self.y_checkpoints
-
-    def get_checkpoint(self, index):
-        return self.y_checkpoints[index]
-
-    def get_named_checkpoint(self, name):
+    def get_checkpoint(self, name:str):
         return self.named_checkpoints[name]
 
-    def get_named_checkpoints(self):
+    def get_checkpoints(self):
         return self.named_checkpoints
+
+    def get_cp_name(self, cp):
+        for k, v in self.named_checkpoints.items():
+            if v is cp:
+                return k
+        return None
 
     def df_from_named(self):
         '''makes a pandas dataframe from the named checkpoints'''
 
-        names = list(self.get_named_checkpoints().keys())
-        values = list(self.get_named_checkpoints().values())
+        names = list(self.get_checkpoints().keys())
+        values = list(self.get_checkpoints().values())
 
         y_values = [v[1:] for v in values]
         x_values = [v[0] for v in values]
-
 
         for x in x_values[1:]:
             if not (x_values[0] == x).all():
@@ -329,12 +346,13 @@ class SingleMeasurementProcessor:
         names_new = []
 
         for i, y in enumerate(y_values):
+            y = np.array(y)
             if len(y) <= 1:
                 y_values_new.append(y[0])
                 names_new.append(names[i])
             elif len(y) > 1:
                 for j, y1 in enumerate(y):
-                    names_new.append(names[i] + ' ' + str(j+1))
+                    names_new.append(names[i] + '_' + str(j+1))
                     y_values_new.append(y[j])
 
         column_names = names_new
@@ -342,8 +360,6 @@ class SingleMeasurementProcessor:
 
         df = pd.DataFrame(data, index=x_values[0], columns=column_names)
         return df
-
-
 
     def summary(self):
         raise NotImplementedError()

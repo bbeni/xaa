@@ -17,7 +17,7 @@ def _load_once(function):
 
 @_load_once
 def load_dm(filename):
-    return DataManager(data_file=filename, load_cached=True)
+    return DataManager(data_file=filename, load_cached=False)
 
 
 def boreas_file_to_dataframes(filename, indices: Union[List[int], List[List[int]]]) \

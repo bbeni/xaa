@@ -1,6 +1,6 @@
 import xaa.loaders.config
 from xaa.core import SingleMeasurementProcessor
-from xaa.operations import Normalize, CheckPoint, LineBG, FermiBG, BackTo, Integrate,\
+from xaa.operations import Normalize, CheckPoint, LineBGRemove, FermiBG, BackTo, Integrate,\
     SplitBy, Average, CombineDifference, Cut, CombineAverage, Add, Flip, ApplyFunctionToY, BackToNamed
 from xaa.plotting import CheckpointPlotter
 
@@ -38,6 +38,7 @@ xaa.loaders.config.CALCULATIONS = {
 # now load the file and measurement 263 to 271
 measurements = list(range(263, 271+1))
 
+# TODO: include stripped version of ./SH1_Tue09.dat
 from xaa.loaders.util import boreas_file_to_dataframes
 dataframes = boreas_file_to_dataframes('./SH1_Tue09.dat', measurements)
 
@@ -47,11 +48,12 @@ def filter_circular(df):
 
 # now setup the pipline to calculate the xmcd
 # xmcd pipelines Checkpoint 1 is the integral mu+ + mu-, Checkpoint 3 is the integral mu+ - mu-
-pipeline = [SplitBy(binary_filter=filter_circular), Average, LineBG, FermiBG, CheckPoint('left_right'),
-                           CombineAverage, Normalize(save='mu0'), CheckPoint('normalized_xas'),
-                           Integrate, CheckPoint('integral_xas'),
-                           BackToNamed('left_right'), Normalize(to='mu0'), CombineDifference, CheckPoint('xmcd'),
-                           Integrate, CheckPoint('integral_xmcd')]
+
+pipeline = [SplitBy(binary_filter=filter_circular), Average, LineBGRemove, FermiBG, CheckPoint('left_right'),
+            CombineAverage, Normalize(save='mu0'), CheckPoint('normalized_xas'),
+            Integrate, CheckPoint('integral_xas'),
+            BackToNamed('left_right'), Normalize(to='mu0'), CombineDifference, CheckPoint('xmcd'),
+            Integrate, CheckPoint('integral_xmcd')]
 
 # the parameters that the pipline needs in order to fit stuff
 pipeline_params = {'cut_range': (627, 662),

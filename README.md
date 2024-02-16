@@ -11,15 +11,26 @@ xaa is a python module designed to help the experimental physicist to make proce
 	* scipy
 	* matplotlib
 	* lmfit
-	
-First install [anaconda](https://www.anaconda.com) ar [miniconda](https://conda.io). then install the dependencies with:
+
+## Installation ##
+
+First install [anaconda](https://www.anaconda.com) or [miniconda](https://conda.io).
+
+(Optionally) create a conda environement using conda/anaconda and activate it.
+
+	conda create -n test_env python=3
+	conda activate test_env
+
+Install the dependencies with:
 
     conda install -c conda-forge lmfit
     conda install numpy scipy matplotlib pandas
-    
-## Installation ##
 
-Todo
+Go to the directory where the setup.py lives and run:
+
+	pip install .
+
+You should now be able to `import xaa`.
 
 ## Working principle ##
 
