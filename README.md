@@ -46,19 +46,29 @@ Let's assume we have 8 measurements, 4 for left and 4 for right polarized xrays 
 Assuming the filenames are 'm1.csv', 'm2.csv', ... , 'm8.csv' that hold the 8 measurements. We load them as pandas dataframes. We also need to define a pipeline and a measurement processor `p`. And also a few parameters needed for some Operations and a function that determines the polarization. The `CheckPointPlotter` is used as a quick way to investigate the data at different `CheckPoint`s. When we are happy we can extract the processed data as a csv that holds all `CheckPoint`s with `p.df_from_named()`.
 
 ```python
-measurements = [pd.read_csv('m{}.csv'.format(i)) for i in range(1,9)]
+dataframes = [pd.read_csv('csvs/m{}.csv'.format(i)) for i in range(1,9)]
 
 def is_left_polarized(df):
     return df.polarization[0] > 0
 
-pipeline = [SplitBy(binary_filter=is_left_polarized), Average, CheckPoint('raw'), 
-            LineBGRemove,  CheckPoint('line_removed'),
-            CombineAverage, Normalize(save='mu0'), CheckPoint('normalized_xas'),
-            Integrate, CheckPoint('integral_xas'),
-            BackToNamed('line_removed'), Normalize(to='mu0'), CombineDifference, CheckPoint('xmcd'),
-            Integrate, CheckPoint('integral_xmcd')]
-
 pipeline_params = {'line_range': [630, 635]} # we need to specify this because of the LineBgRemove Operation.
+
+pipeline = [SplitBy(binary_filter=is_left_polarized),   # split data by left and right polarization
+            Average,                                    # take average of left and right individually
+            CheckPoint('raw'),                          #      Checkpoint named 'raw'
+            LineBGRemove,                               # remove a fitted line fitted to 'line_range'
+            CheckPoint('line_removed'),                 #      Checkpoint named 'line_removed'
+            CombineAverage,                             # take average of left and right
+            Normalize(save='mu0'),                      # normalize to maximum and save max as 'mu0'
+            CheckPoint('normalized_xas'),               #      Checkpoint
+            Integrate,                                  # take integral numerically
+            CheckPoint('integral_xas'),                 #      Checkpoint
+            BackToNamed('line_removed'),                # go to Checkpoint 'line_removed' -> split data
+            Normalize(to='mu0'),                        # normalize split data (divide both by 'mu0')
+            CombineDifference,                          # left - right
+            CheckPoint('xmcd'),                         #      Checkpoint named 'xmcd'
+            Integrate,                                  # Integrate xmcd
+            CheckPoint('integral_xmcd')]                #      Checkpoint named 'integral_xmcd'
 
 p = SingleMeasurementProcessor()
 p.add_pipeline(pipeline)
@@ -76,7 +86,7 @@ df.to_csv('test_run.csv')
 
 # or plot the results to see what happend for debugging
 # give it a list of checkpoint names to plot.
-plotter = CheckPointPlotter(['normalized_xas', 'xmcd'])
+plotter = CheckpointPlotter(['normalized_xas', 'xmcd', 'integral_xmcd', 'line_removed'])
 plotter.plot(p)
 
 ```
