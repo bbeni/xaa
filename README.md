@@ -25,7 +25,6 @@ You should now be able to `import xaa`.
 A small example to analyse XMCD is given. We first need to import the modules.
 
 ```python
-import numpy as np
 import pandas as pd
 from xaa.core import SingleMeasurementProcessor
 from xaa.plotting import CheckpointPlotter
