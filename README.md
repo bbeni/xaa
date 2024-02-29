@@ -1,5 +1,7 @@
 # README #
 
+⚠️ Work in progress ⚠️
+
 xaa is a python module designed to help the experimental physicist to make processing of XAS data easy. This code is done as part of a bachelor thesis project by Benjamin Froelich at University of Zuerich.
 
 ## Installation ##
