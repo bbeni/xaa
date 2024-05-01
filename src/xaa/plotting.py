@@ -4,6 +4,8 @@ import numpy as np
 from pylab import cm
 from .core import SingleMeasurementProcessor, MultiMeasurementProcessor
 
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
 
 class CheckpointPlotter:
     def __init__(self, named_cps_to_plot=[]):
@@ -154,7 +156,7 @@ class TFYTEYComparePlot():
 
 
 class OneAxisPlot():
-    def __init__(self, xlabel, ylabel, figsize=(3.54, 2), axis_dimensions=[0.15, 0.2, 0.84, 0.79], color_map_name='tab10', n_colors=2):
+    def __init__(self, xlabel, ylabel, figsize=(3.54, 2), axis_dimensions=[0.15, 0.20, 0.84, 0.77], color_map_name='tab10', n_colors=2):
         # from https://towardsdatascience.com/an-introduction-to-making-scientific-publication-plots-with-python-ea19dfa7f51e
         # Edit the font, font size, and axes width
         mpl.rcParams['font.family'] = 'Avenir'
@@ -211,7 +213,9 @@ class OneAxisPlot():
             self.ax.legend(**self.legend_kwargs)
         else:
             self.ax.legend(bbox_to_anchor=(1, 0), loc='lower right', frameon=False, fontsize=9)
+
+        self.fig.tight_layout()
         if not save:
             plt.show()
         else:
-            plt.savefig(save, dpi=300)
+            plt.savefig(save, dpi=300)#,  bbox_inches="tight")
