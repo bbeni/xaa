@@ -126,7 +126,13 @@ class SingleMeasurementProcessor:
     get_named_checkpoint(name="test")
         returns the x and y data from that checkpoint.
     """
-    def __init__(self):
+    def __init__(self, pipeline, pipeline_parameters = {}):
+        """ pipeline needs to be provided:
+                it is a list of 'xaa.operations.Operation' that defines how to process the XAS data
+            pipeline_parameters:
+                some Operations need parameters, that need be provided as a dict
+                Hint: it will tell which ones are needed when you call SingleMeasurementProcessor(pipeline)
+        """
         self.processed = False
         self.dfs = None
 
@@ -142,11 +148,22 @@ class SingleMeasurementProcessor:
 
         self.storage_pool = StoragePool()
 
+        self.add_pipeline(pipeline)
+        self.add_params(pipeline_parameters)
+        self.check_missing_params()
+
+
     def get_x(self):
         return self.xy_blocks[0].x
 
     def add_data(self, dfs: Union[pd.DataFrame, List[pd.DataFrame]], x_column: str, y_column: str, n_samples: int = 2000):
-        """add dataframes, then extract x and y columns, adjust x bounds, resample x and y values"""
+        """add pandas dataframes, x_column and y_column are used
+            -> it adjust x bounds as intersection of all x_columns bounds,
+            -> then resample x and y values with n_samples equally space points (might introduce some small error)
+               for now it is linearly interpolated, but we could change it 
+               to support other interpolations https://de.wikipedia.org/wiki/Spline-Interpolation. 
+        """
+
         self.dfs = dfs if type(dfs) is list else [dfs]
 
         # resample x and y

@@ -13,14 +13,6 @@ import pandas as pd
 
 from .config import LABELS, PARAMS, CALCULATIONS, RENAMINGS
 
-#################
-# CONFIGURATION #
-#################
-
-#################
-#################
-
-
 acquisition_regex = r'(#S.*?)#L\s+(.*?)(?:\Z|#C)'
 number_date_regex = r'#S\s+(.*?)\s+.*?#D\s+(.*?)\n#C'
 

@@ -1,5 +1,9 @@
+'''Some functions to calculate L2 and L3-edge sum rules.
 
-
+See XMCD sum rules for L_z and and S_z in the papers:
+    - https://doi.org/10.1103/PhysRevLett.68.1943
+    - https://doi.org/10.1103/PhysRevLett.70.694
+'''
 
 # l2 l3 edge sumrule by thole cara
 
